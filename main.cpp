@@ -1,57 +1,86 @@
 #include <iostream>
-#include <vector>
-#include <string.h>
-using namespace std;
 
-class TCPconnectionReno
-{
+class TCPConnection {
 private:
-    int cwnd;
-    int ssthresh;
-    int rtt;
-    void increasecwnd();
+    int CWND;     
+    int ssthresh; 
+    int RTT;      
+    bool inSlowStart;       
+    bool inCongestionAvoidance;  
+    bool inFastRecovery;    
+
 public:
-    TCPconnectionReno(int _cwnd = 1, int _ssthresh = 65535, int init_rtt = 0);
-    ~TCPconnectionReno();
-    void onPacketLoss();
-    void onRTTUpdate(int new_rtt);
-    int getCwnd()
-    {
-        return cwnd;
+    TCPConnection(int initialCWND, int initialSSThresh, int initialRTT = 0) {
+        CWND = initialCWND;
+        ssthresh = initialSSThresh;
+        RTT = initialRTT;
+        inSlowStart = true;
+        inCongestionAvoidance = false;
+        inFastRecovery = false;
     }
+    
+    void SendData() {
+        std::cout << "Sending data with CWND = " << CWND << " and ssthresh = " << ssthresh << std::endl;
+    }
+
+    void onPacketLoss() {
+        CWND /= 2;
+        ssthresh = CWND;
+        if (inSlowStart) {
+            inFastRecovery = true;
+        } else if (inCongestionAvoidance) {
+            inFastRecovery = true;
+        }
+    }
+
+    void onRTTUpdate(int updatedRTT) {
+        RTT = updatedRTT;
+        if (inSlowStart) {
+            CWND += 1; // it can *2 and other +1
+            if (CWND >= ssthresh) {
+                inSlowStart = false;
+                inCongestionAvoidance = true;
+            }
+        } else if (inCongestionAvoidance) {
+            CWND += 1 / CWND; // it can +1 and other *2
+        } else if (inFastRecovery) {
+            inFastRecovery = false;
+            inCongestionAvoidance = true;
+        }
+    }
+
+    int getCWND()
+    {
+        return CWND;
+    }
+
     int getSsthresh()
     {
         return ssthresh;
     }
+    int getRTT()
+    {
+        return RTT;
+    }
+    bool isInSlowmode()
+    {
+        return inSlowStart;
+    }
+    bool isInFastRecovery()
+    {
+        return inFastRecovery;
+    }
 };
 
-TCPconnectionReno::TCPconnectionReno(int _cwnd = 1, int _ssthresh = 65535, int init_rtt = 0) : 
-    cwnd(_cwnd),
-    ssthresh(_ssthresh),
-    rtt(init_rtt)
-{
-}
+int main() {
+    TCPConnection conn1(10, 100);
+    TCPConnection conn2(20, 200);
 
-void TCPconnectionReno::onPacketLoss()
-{
-    cwnd = ssthresh;
-}
+    conn1.SendData();
+    conn1.onRTTUpdate(55);
+    conn2.SendData();
+    conn2.onPacketLoss();
+    conn2.onRTTUpdate(70);
 
-void TCPconnectionReno::increasecwnd()
-{
-    if (cwnd < ssthresh)
-        cwnd *= 2;
-    else
-        cwnd += 1;
-}
-
-void TCPconnectionReno::onRTTUpdate(int new_rtt)
-{
-    rtt = new_rtt;
-    increasecwnd();   
-}
-
-int main()
-{
-
+    return 0;
 }
