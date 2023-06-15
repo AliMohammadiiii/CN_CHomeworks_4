@@ -11,7 +11,25 @@ Reno - new Reno - BBR
 5) [Questions](#result)
 
 ## An Overview
-In this project
+This code showcases a simplified implementation of a TCP connection, demonstrating the handling of sending data, reacting to round-trip time updates, and responding to packet loss.
+
+
+Class Definition: The code begins with the definition of a class called TCPConnection. This class represents a TCP connection and encapsulates its state and behavior.
+
+Private Member Variables: The class defines several private member variables:
+
+CWND represents the congestion window size, which determines the amount of data that can be sent before receiving acknowledgments.
+ssthresh stores the slow-start threshold value, which determines when the connection transitions from slow start to congestion avoidance.
+RTT holds the current round-trip time, representing the time taken for a packet to travel from the sender to the receiver and back.
+inSlowStart, inCongestionAvoidance, and inFastRecovery are boolean flags that indicate the connection's current state.
+Constructor: The class has a constructor that takes initial values for CWND, ssthresh, and RTT. It initializes the member variables and sets the connection state to "slow start" while marking congestion avoidance and fast recovery as false.
+
+Member Functions:
+
+SendData(): This function simulates sending data and outputs the current values of CWND and ssthresh.
+onPacketLoss(): This function is called when a packet loss is detected. It halves the CWND value and sets ssthresh to the new CWND value. Depending on the current state, it updates the state to fast recovery if in slow start or congestion avoidance.
+onRTTUpdate(): This function is called when the round-trip time is updated. It adjusts the CWND value based on the current state. In slow start, CWND is incremented by 1 until it reaches or exceeds ssthresh, transitioning to congestion avoidance. In congestion avoidance, CWND is increased by a smaller fraction. In fast recovery, the state transitions to congestion avoidance.
+Getter functions: These functions provide access to the private member variables of the class.
 
 ## Questions
 In above we disscuss about each question:
