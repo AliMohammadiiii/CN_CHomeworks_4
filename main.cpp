@@ -1,86 +1,149 @@
 #include <iostream>
+#include <cstdlib>
+#include <string>
+
+using namespace std;
+
+const float PACKET_LOSS_RATE = 0.3;
+const int SIMULATED_PACKETS = 1000;
+
+const string RED = "\x1B[31m";
+const string GREEN = "\x1B[32m";
+const string RESET = "\033[0m";
 
 class TCPConnection {
 private:
-    int CWND;     
-    int ssthresh; 
-    int RTT;      
-    bool inSlowStart;       
-    bool inCongestionAvoidance;  
-    bool inFastRecovery;    
+    int cwnd;
+    int ssthresh;
+    int dupACKs;
+    int totalPackets;
+    int lastAckedPacket;
+    int lastSentPacket;
+    string algorithm;
+    bool packets[SIMULATED_PACKETS] = {false};
+    bool enableLogging;
 
 public:
-    TCPConnection(int initialCWND, int initialSSThresh, int initialRTT = 0) {
-        CWND = initialCWND;
-        ssthresh = initialSSThresh;
-        RTT = initialRTT;
-        inSlowStart = true;
-        inCongestionAvoidance = false;
-        inFastRecovery = false;
-    }
-    
-    void SendData() {
-        std::cout << "Sending data with CWND = " << CWND << " and ssthresh = " << ssthresh << std::endl;
+    TCPConnection(int cwnd = 4, int ssthresh = 16, string algorithm = "Reno", bool enableLogging = false) {
+        this->cwnd = cwnd;
+        this->ssthresh = ssthresh;
+        this->algorithm = algorithm;
+        this->enableLogging = enableLogging;
+        dupACKs = 0;
+        totalPackets = 0;
+        lastSentPacket = 0;
+        lastAckedPacket = 0;
+        srand(time(NULL));
     }
 
-    void onPacketLoss() {
-        CWND /= 2;
-        ssthresh = CWND;
-        if (inSlowStart) {
-            inFastRecovery = true;
-        } else if (inCongestionAvoidance) {
-            inFastRecovery = true;
+    void simulate() {
+        if (enableLogging)
+            cout << RED + "Start simulation.\t\t" << " cwnd: " << cwnd << " ssthresh: " << ssthresh << RESET << endl;
+
+        sendData(1);
+    }
+
+private:
+    void handleSlowStart() {
+        cwnd *= 2;
+
+        if (enableLogging)
+            cout << RED + "Slow start mode.\t\t" << " cwnd: " << cwnd << " ssthresh: " << ssthresh << RESET << endl; 
+    }
+
+    void handleCongestionAvoidance() {
+        cwnd += 1;
+
+        if (enableLogging)
+            cout << RED + "Congestion avoidance mode.\t" << " cwnd: " << cwnd << " ssthresh: " << ssthresh << RESET << endl; 
+    }
+
+    void handleFastRecovery() {
+        if (algorithm == "Reno") {
+            cwnd = cwnd / 2;
+            ssthresh = cwnd;
         }
+
+        if (enableLogging)
+            cout << RED + "Fast recovery mode.\t\t"  << " cwnd: " << cwnd << " ssthresh: " << ssthresh << RESET << endl; 
     }
 
-    void onRTTUpdate(int updatedRTT) {
-        RTT = updatedRTT;
-        if (inSlowStart) {
-            CWND += 1; // it can *2 and other +1
-            if (CWND >= ssthresh) {
-                inSlowStart = false;
-                inCongestionAvoidance = true;
+    void onPacketLost() {
+        ssthresh = cwnd / 2;
+        cwnd = 1;
+
+        if (enableLogging)
+            cout << RED + "Timeout.\t\t\t" << " cwnd: " << cwnd << " ssthresh: " << ssthresh << RESET << endl; 
+    }
+
+    void sendData(int i) {
+        if (i > SIMULATED_PACKETS) {
+            cout << GREEN <<  "Simulation finished." << " total packets: " << totalPackets << " performance: " << SIMULATED_PACKETS / (float)totalPackets << RESET << endl;
+            return;
+        }
+
+        if (enableLogging)
+            cout << "Packet " << i << " sent." << " ";
+
+        lastSentPacket = i;
+        totalPackets++;
+
+        if (rand() % 100 < PACKET_LOSS_RATE * 100) {
+            if (enableLogging)
+                cout << "Packet " << i << " lost." << endl;
+        }
+        else {
+            packets[i - 1] = true;
+            int ackedPacket;
+            for (ackedPacket = 0; ackedPacket < SIMULATED_PACKETS; ackedPacket++) {
+                if (packets[ackedPacket] == false) {
+                    break;
+                }
             }
-        } else if (inCongestionAvoidance) {
-            CWND += 1 / CWND; // it can +1 and other *2
-        } else if (inFastRecovery) {
-            inFastRecovery = false;
-            inCongestionAvoidance = true;
+            
+            if (enableLogging)
+                cout << "Acknowledgement " << ackedPacket << " received." << endl;
+
+            if (ackedPacket == lastAckedPacket) {
+                dupACKs++;
+                if (dupACKs == 2) {
+                    handleFastRecovery();
+                    sendData(lastAckedPacket + 1);
+                    return;
+                }
+            }
+            else {
+                dupACKs = 0;
+                lastAckedPacket = ackedPacket;
+                if (cwnd < ssthresh) {
+                    handleSlowStart();
+                }
+                else {
+                    handleCongestionAvoidance();
+                }
+                sendData(lastAckedPacket + 1);
+                return;
+            }
         }
-    }
 
-    int getCWND()
-    {
-        return CWND;
-    }
-
-    int getSsthresh()
-    {
-        return ssthresh;
-    }
-    int getRTT()
-    {
-        return RTT;
-    }
-    bool isInSlowmode()
-    {
-        return inSlowStart;
-    }
-    bool isInFastRecovery()
-    {
-        return inFastRecovery;
+        if (lastSentPacket - lastAckedPacket < cwnd) {
+            sendData(lastSentPacket + 1);
+        }
+        else {
+            onPacketLost();
+            sendData(lastAckedPacket + 1);
+        }
     }
 };
 
 int main() {
-    TCPConnection conn1(10, 100);
-    TCPConnection conn2(20, 200);
+    cout << "Reno:" << endl;
+    TCPConnection reno(4, 16, "Reno", false);
+    reno.simulate();
 
-    conn1.SendData();
-    conn1.onRTTUpdate(55);
-    conn2.SendData();
-    conn2.onPacketLoss();
-    conn2.onRTTUpdate(70);
+    cout << "NewReno:" << endl;    
+    TCPConnection newReno(4, 16, "newReno", false);
+    newReno.simulate();
 
     return 0;
 }
