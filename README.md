@@ -2,13 +2,19 @@
 # TCP congestion algorithms
 Reno - new Reno - BBR
 
+Mahdi Cheraghi - 810199399 
+
+Ali Mohammadi - 810199488
+
 ## Table of Contents:
 
 1) [An overview](#an-overview)
-2) [Reno](#general-command)
-3) [New Reno](#link-state-routing-protocol)
-4) [BBR](#distance-vector-routing-protocol)
-5) [Questions](#result)
+2) [Questions](#questions)
+    1) [Summarize the difference between congestion control and flow control](#summarize-the-difference-between-congestion-control-and-flow-control)
+    2) [Briefly describe the New Reno algorithm](#briefly-describe-the-New-Reno-algorithm)
+    3) [Briefly describe the BBR algorithm](#briefly-describe-the-BBR-algorithm)
+    4) [Briefly describe the difference between these three algorithms](#briefly-describe-the-difference-between-these-three-algorithms)
+3) [Results](#results)
 
 ## An Overview
 This code showcases a simplified implementation of a TCP connection, demonstrating the handling of sending data, reacting to round-trip time updates, and responding to packet loss.
@@ -54,7 +60,7 @@ Flow Control:
 In summary, congestion control focuses on managing network congestion by regulating overall data flow within the network infrastructure, while flow control ensures that the receiver can handle the incoming data by synchronizing the transmission rate between the sender and receiver.
 
 
-### Briefly describe the New Reno algorithm.
+### Briefly describe the New Reno algorithm
 
 The New Reno algorithm is an enhancement to the Reno congestion control algorithm, which is commonly used in TCP (Transmission Control Protocol) implementations. It was introduced to improve the performance and efficiency of congestion control in network communication. Here's a brief description of the New Reno algorithm:
 
@@ -70,7 +76,7 @@ The New Reno algorithm is an enhancement to the Reno congestion control algorith
 
 Overall, the New Reno algorithm improves the efficiency of TCP congestion control by using fast recovery, duplicate acknowledgments, and fast retransmit mechanisms. It allows for faster recovery from packet loss and adapts the transmission rate to prevent congestion while optimizing network performance.
 
-### Briefly describe the BBR algorithm.
+### Briefly describe the BBR algorithm
 
 The BBR (Bottleneck Bandwidth and Round-trip time) algorithm is a congestion control algorithm developed by Google. It aims to optimize network performance by dynamically adjusting the sending rate of TCP (Transmission Control Protocol) flows based on the available bandwidth and round-trip time (RTT) of the network. Here's a brief description of the BBR algorithm:
 
@@ -139,3 +145,12 @@ TCP Vegas achieves this by using a delay-based congestion control mechanism. It 
 Compared to New Reno, Reno, and BBR algorithms, TCP Vegas offers superior performance in terms of minimizing network queueing delays. It achieves lower latency by proactively adapting the sending rate to the network conditions, resulting in a more responsive and efficient network. This makes TCP Vegas a suitable choice when low latency and reduced network queueing delays are crucial, such as in real-time communication applications or interactive services.
 
 However, it's important to note that TCP Vegas may not always outperform other algorithms in every scenario. The choice of the most suitable congestion control algorithm depends on various factors, including network characteristics, deployment environment, and specific application requirements. Therefore, careful consideration of these factors is necessary when selecting the appropriate algorithm for a given context.
+
+
+## Results
+
+As we can see in the results, the BBR algorithm is the best in terms of throughput (performance) and the Reno algorithm is the worst. The New Reno algorithm is better than the Reno algorithm, but it is still worse than the BBR algorithm. The BBR algorithm is the best because it is a modern algorithm that dynamically adjusts the sending rate based on available bandwidth and RTT, focusing on optimizing network performance and minimizing congestion.
+
+Here is the result with `PACKET_LOSS_RATE = 0.3` and `SIMULATED_PACKETS = 100`:
+
+![Result image](image.png)
